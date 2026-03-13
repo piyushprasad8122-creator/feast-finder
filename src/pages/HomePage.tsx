@@ -1,20 +1,37 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Search, SlidersHorizontal, Flame, Star, Leaf } from "lucide-react";
-import { restaurants, cuisineTypes } from "@/data/mock";
+import { cuisineTypes } from "@/data/mock";
 import RestaurantCard from "@/components/RestaurantCard";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { motion } from "framer-motion";
 
 export default function HomePage() {
+  const [restaurants, setRestaurants] = useState([]);
   const [search, setSearch] = useState("");
   const [selectedCuisine, setSelectedCuisine] = useState<string | null>(null);
   const [vegOnly, setVegOnly] = useState(false);
   const [sortBy, setSortBy] = useState<"rating" | "delivery" | "cost">("rating");
+  const [loading, setLoading] = useState(true);
+
+  // ✅ Fetch restaurants from API
+  useEffect(() => {
+    fetch("/api/restaurants")
+      .then((res) => res.json())
+      .then((data) => {
+        setRestaurants(data);
+        setLoading(false);
+      })
+      .catch((error) => {
+        console.error("Error fetching restaurants:", error);
+        setLoading(false);
+      });
+  }, []);
 
   let filtered = restaurants.filter(r => {
-    const matchSearch = r.name.toLowerCase().includes(search.toLowerCase()) || r.cuisine.some(c => c.toLowerCase().includes(search.toLowerCase()));
-    const matchCuisine = !selectedCuisine || r.cuisine.includes(selectedCuisine);
+    const matchSearch = r.name.toLowerCase().includes(search.toLowerCase()) || 
+      (r.cuisine && r.cuisine.some(c => c.toLowerCase().includes(search.toLowerCase())));
+    const matchCuisine = !selectedCuisine || (r.cuisine && r.cuisine.includes(selectedCuisine));
     const matchVeg = !vegOnly || r.isVeg;
     return matchSearch && matchCuisine && matchVeg;
   });
@@ -96,7 +113,13 @@ export default function HomePage() {
         <h2 className="font-display text-xl font-bold mb-6">
           {selectedCuisine ? `${selectedCuisine} Restaurants` : "Top Rated Near You"}
         </h2>
-        {filtered.length === 0 ? (
+
+        {/* ✅ Loading state */}
+        {loading ? (
+          <div className="text-center py-20">
+            <p className="text-muted-foreground text-lg">Loading restaurants...</p>
+          </div>
+        ) : filtered.length === 0 ? (
           <div className="text-center py-20">
             <p className="text-muted-foreground text-lg">No restaurants found. Try a different search.</p>
           </div>
