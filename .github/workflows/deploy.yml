@@ -1,4 +1,4 @@
-name: Deploy
+name: Deploy to EC2
 
 on:
   push:
@@ -11,7 +11,7 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -21,25 +21,26 @@ jobs:
       - name: Install dependencies
         run: npm install
 
-      - name: Build app
+      - name: Build project
         run: npm run build
 
-      - name: Upload dist to EC2
-        uses: appleboy/scp-action@v1.0.0
+      - name: Copy dist files to EC2
+        uses: appleboy/scp-action@v1
         with:
-          host: ${{ secrets.HOST }}
-          username: ${{ secrets.USERNAME }}
-          key: ${{ secrets.KEY }}
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
           source: "dist/*"
-          target: "/tmp/feast-finder"
+          target: "/home/ubuntu/deploy"
 
-      - name: Publish on EC2
-        uses: appleboy/ssh-action@v1.0.3
+      - name: Deploy files on server
+        uses: appleboy/ssh-action@v1
         with:
-          host: ${{ secrets.HOST }}
-          username: ${{ secrets.USERNAME }}
-          key: ${{ secrets.KEY }}
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
           script: |
             sudo mkdir -p /var/www/feast-finder
-            sudo cp -r /tmp/feast-finder/dist/* /var/www/feast-finder/ || sudo cp -r /tmp/feast-finder/* /var/www/feast-finder/
+            sudo rm -rf /var/www/feast-finder/*
+            sudo cp -r /home/ubuntu/deploy/dist/* /var/www/feast-finder/
             sudo systemctl reload nginx
