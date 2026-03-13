@@ -1,73 +1,322 @@
-# Welcome to your Lovable project
+# 🍽️ Feast Finder — Food Discovery & Ordering Platform
 
-## Project info
+Feast Finder is a **Zomato-style food discovery and ordering platform** built using modern full-stack technologies and deployed with a **complete DevOps CI/CD pipeline**.
 
-**URL**: https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID
+This project demonstrates how to build and deploy a **production-ready web application** using **React, Node.js, AWS EC2, Nginx, and GitHub Actions**.
 
-## How can I edit this code?
+---
 
-There are several ways of editing your application.
+# 🌐 Live Application
 
-**Use Lovable**
+Frontend:
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and start prompting.
+http://13.235.162.211
 
-Changes made via Lovable will be committed automatically to this repo.
+Backend API examples:
 
-**Use your preferred IDE**
-
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
-
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
-
-Follow these steps:
-
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
+```
+http://13.235.162.211/api/restaurants
+http://13.235.162.211/api/menu/1
 ```
 
-**Edit a file directly in GitHub**
+---
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+# 🏗️ Architecture
 
-**Use GitHub Codespaces**
+```
+Developer
+   ↓
+GitHub Repository
+   ↓
+GitHub Actions CI/CD Pipeline
+   ↓
+AWS EC2 Server (Ubuntu)
+   ↓
+Nginx Reverse Proxy
+   ↓
+Node.js Backend API
+   ↓
+React Frontend
+   ↓
+Public Website
+```
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+---
 
-## What technologies are used for this project?
+# 🧰 Technology Stack
 
-This project is built with:
+## Frontend
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+* React
+* TypeScript
+* Vite
+* TailwindCSS
+* ShadCN UI
 
-## How can I deploy this project?
+## Backend
 
-Simply open [Lovable](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and click on Share -> Publish.
+* Node.js
+* Express.js
+* REST APIs
 
-## Can I connect a custom domain to my Lovable project?
+## DevOps
 
-Yes, you can!
+* AWS EC2 (Ubuntu)
+* Nginx Web Server
+* GitHub Actions (CI/CD)
+* SSH Key Based Deployment
+* GitHub Secrets
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+---
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+# 📁 Project Structure
+
+```
+feast-finder/
+│
+├── src/
+│   ├── components/
+│   ├── pages/
+│   ├── hooks/
+│   ├── services/
+│   └── App.tsx
+│
+├── public/
+│
+├── dist/                  # Production build
+│
+├── server/
+│   └── index.js           # Express API
+│
+├── .github/
+│   └── workflows/
+│       deploy.yml         # CI/CD pipeline
+│
+├── package.json
+├── vite.config.ts
+└── README.md
+```
+
+---
+
+# 🚀 Current Features
+
+### 🏪 Restaurant Discovery
+
+Users can view available restaurants.
+
+```
+GET /api/restaurants
+```
+
+---
+
+### 🍔 Restaurant Menu
+
+Clicking a restaurant loads its menu.
+
+```
+GET /api/menu/:restaurantId
+```
+
+Example:
+
+```
+/api/menu/1
+```
+
+---
+
+### 🛒 Cart System
+
+Users can:
+
+* Add items to cart
+* Increase quantity
+* Decrease quantity
+* Remove items
+* View total price
+
+---
+
+### 💳 Checkout API
+
+Orders are placed through:
+
+```
+POST /api/order
+```
+
+Example request:
+
+```json
+{
+  "cart": [...],
+  "totalAmount": 398
+}
+```
+
+Example response:
+
+```json
+{
+  "message": "Order placed successfully"
+}
+```
+
+---
+
+### ⚙️ CI/CD Deployment
+
+Every push to the **main branch** automatically deploys the site.
+
+Pipeline flow:
+
+```
+GitHub Push
+   ↓
+GitHub Actions
+   ↓
+Build React Project
+   ↓
+Upload Build to EC2
+   ↓
+Replace Production Files
+   ↓
+Reload Nginx
+   ↓
+Live Website Updated
+```
+
+---
+
+# 🔐 Security
+
+* SSH key based deployment
+* GitHub Secrets for credentials
+* Nginx reverse proxy
+* EC2 firewall rules
+
+---
+
+# 🖥️ Deployment
+
+### Build frontend
+
+```
+npm run build
+```
+
+### Deploy to server
+
+```
+sudo rm -rf /var/www/feast-finder/*
+sudo cp -r dist/* /var/www/feast-finder/
+sudo systemctl reload nginx
+```
+
+---
+
+# 📊 DevOps Skills Demonstrated
+
+* Infrastructure setup on AWS EC2
+* Nginx web server configuration
+* Reverse proxy setup
+* CI/CD automation using GitHub Actions
+* Secure SSH deployment
+* Production build deployment
+* Backend API integration
+
+---
+
+# 📈 Future Improvements (Planned Features)
+
+The following features will be implemented in future updates.
+
+## Database Integration
+
+Planned:
+
+* MySQL database
+* Restaurant table
+* Menu table
+* Orders table
+* Order items table
+
+---
+
+## Authentication System
+
+Planned features:
+
+* User registration
+* Login system
+* JWT authentication
+* User profiles
+
+---
+
+## Payment Integration
+
+Future integration:
+
+* Razorpay payment gateway
+* Secure payment verification
+
+---
+
+## Map Integration
+
+Restaurant discovery using maps.
+
+Planned:
+
+* MapTiler API
+* Nearby restaurant detection
+* Delivery tracking
+
+---
+
+## Real-Time Order Tracking
+
+Future features:
+
+* Live order status
+* WebSocket updates
+
+---
+
+## Admin Dashboard
+
+Admin panel for:
+
+* Restaurant management
+* Menu management
+* Order monitoring
+
+---
+
+## Advanced DevOps
+
+Future infrastructure improvements:
+
+* Docker containerization
+* Kubernetes orchestration
+* Terraform infrastructure as code
+* Prometheus monitoring
+* Grafana dashboards
+
+---
+
+# 🎯 Project Goal
+
+The goal of this project is to demonstrate **full-stack development and DevOps deployment skills** by building a scalable food ordering platform with an automated deployment pipeline.
+
+---
+
+# 👨‍💻 Author
+
+Piyush Prasad
+
+DevOps & Full Stack Developer
+
