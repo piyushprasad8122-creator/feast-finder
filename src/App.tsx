@@ -30,7 +30,7 @@ function App() {
     fetch("/api/restaurants")
       .then((res) => res.json())
       .then((data: Restaurant[]) => setRestaurants(data))
-      .catch((error) => console.error("Error fetching restaurants:", error));
+      .catch((err) => console.error("Error fetching restaurants:", err));
   }, []);
 
   const handleRestaurantClick = (restaurant: Restaurant) => {
@@ -39,13 +39,13 @@ function App() {
     fetch(`/api/menu/${restaurant.id}`)
       .then((res) => res.json())
       .then((data: MenuItem[]) => setMenuItems(data))
-      .catch((error) => console.error("Error fetching menu:", error));
+      .catch((err) => console.error("Error fetching menu:", err));
   };
 
   const addToCart = (item: MenuItem | CartItem) => {
-    const existingItem = cart.find((cartItem) => cartItem.id === item.id);
+    const existing = cart.find((cartItem) => cartItem.id === item.id);
 
-    if (existingItem) {
+    if (existing) {
       const updatedCart = cart.map((cartItem) =>
         cartItem.id === item.id
           ? { ...cartItem, quantity: cartItem.quantity + 1 }
@@ -58,15 +58,17 @@ function App() {
   };
 
   const removeFromCart = (id: number) => {
-    const existingItem = cart.find((item) => item.id === id);
+    const existing = cart.find((item) => item.id === id);
 
-    if (!existingItem) return;
+    if (!existing) return;
 
-    if (existingItem.quantity === 1) {
+    if (existing.quantity === 1) {
       setCart(cart.filter((item) => item.id !== id));
     } else {
       const updatedCart = cart.map((item) =>
-        item.id === id ? { ...item, quantity: item.quantity - 1 } : item
+        item.id === id
+          ? { ...item, quantity: item.quantity - 1 }
+          : item
       );
       setCart(updatedCart);
     }
@@ -77,11 +79,33 @@ function App() {
     0
   );
 
+  const handleCheckout = () => {
+    fetch("/api/order", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        cart,
+        totalAmount
+      })
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        alert(data.message);
+        setCart([]);
+      })
+      .catch((err) => {
+        console.error("Checkout error:", err);
+      });
+  };
+
   return (
     <div style={{ padding: "20px", fontFamily: "Arial" }}>
       <h1>Feast Finder</h1>
 
       <h2>Restaurants</h2>
+
       <div style={{ display: "flex", gap: "20px", flexWrap: "wrap" }}>
         {restaurants.map((restaurant) => (
           <div
@@ -129,7 +153,10 @@ function App() {
                   <h3>{item.item_name}</h3>
                   <p>{item.description}</p>
                   <p>₹{item.price}</p>
-                  <button onClick={() => addToCart(item)}>Add to Cart</button>
+
+                  <button onClick={() => addToCart(item)}>
+                    Add to Cart
+                  </button>
                 </div>
               ))}
             </div>
@@ -141,7 +168,7 @@ function App() {
         <h2>Cart</h2>
 
         {cart.length === 0 ? (
-          <p>Your cart is empty.</p>
+          <p>Your cart is empty</p>
         ) : (
           <div>
             {cart.map((item) => (
@@ -153,9 +180,11 @@ function App() {
                 }}
               >
                 <h4>{item.item_name}</h4>
-                <p>Price: ₹{item.price}</p>
+                <p>₹{item.price}</p>
                 <p>Quantity: {item.quantity}</p>
+
                 <button onClick={() => addToCart(item)}>+</button>
+
                 <button
                   onClick={() => removeFromCart(item.id)}
                   style={{ marginLeft: "10px" }}
@@ -166,6 +195,20 @@ function App() {
             ))}
 
             <h3>Total: ₹{totalAmount}</h3>
+
+            <button
+              onClick={handleCheckout}
+              style={{
+                marginTop: "10px",
+                padding: "10px 20px",
+                backgroundColor: "green",
+                color: "white",
+                border: "none",
+                borderRadius: "5px"
+              }}
+            >
+              Checkout
+            </button>
           </div>
         )}
       </div>
