@@ -1,4 +1,4 @@
-name: Deploy to EC2
+kname: Deploy to EC2
 
 on:
   push:
@@ -19,7 +19,7 @@ jobs:
       - name: Setup SSH
         run: |
           mkdir -p ~/.ssh
-          printf "%s" "${{ secrets.EC2_SSH_KEY }}" > ~/.ssh/id_ed25519
+          echo "${{ secrets.EC2_SSH_KEY_B64 }}" | base64 -d > ~/.ssh/id_ed25519
           chmod 600 ~/.ssh/id_ed25519
           ssh-keyscan -H ${{ secrets.EC2_HOST }} >> ~/.ssh/known_hosts
 
@@ -31,24 +31,14 @@ jobs:
         run: |
           ssh -i ~/.ssh/id_ed25519 ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << 'EOF'
             set -e
-
             cd /home/ubuntu/feast-finder
 
-            echo "Pull latest code"
             git pull origin main
-
-            echo "Install dependencies"
             npm install
-
-            echo "Build project"
             npm run build
 
-            echo "Update Nginx files"
             sudo rm -rf /var/www/feast-finder/*
             sudo cp -r dist/* /var/www/feast-finder/
 
-            echo "Reload Nginx"
             sudo systemctl reload nginx
-
-            echo "Deployment successful"
           EOF
