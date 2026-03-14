@@ -1,3 +1,4 @@
+const db = require("../db.cjs");
 const express = require("express");
 const cors = require("cors");
 
@@ -7,62 +8,77 @@ const PORT = 5000;
 app.use(cors());
 app.use(express.json());
 
-const restaurants = [
-  {
-    id: 1,
-    name: "Spice Garden",
-    location: "Bangalore",
-    rating: 4.5,
-    image: "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4"
-  },
-  {
-    id: 2,
-    name: "Pizza Hub",
-    location: "Bangalore",
-    rating: 4.2,
-    image: "https://images.unsplash.com/photo-1513104890138-7c749659a591"
-  },
-  {
-    id: 3,
-    name: "Sushi World",
-    location: "Bangalore",
-    rating: 4.7,
-    image: "https://images.unsplash.com/photo-1579871494447-9811cf80d66c"
-  }
-];
-
-const menu = {
-  1: [
-    { id: 1, restaurant_id: 1, item_name: "Paneer Butter Masala", price: 250, description: "Rich creamy paneer curry" },
-    { id: 2, restaurant_id: 1, item_name: "Butter Naan", price: 40, description: "Soft buttery naan" }
-  ],
-  2: [
-    { id: 3, restaurant_id: 2, item_name: "Margherita Pizza", price: 299, description: "Classic cheese pizza" },
-    { id: 4, restaurant_id: 2, item_name: "Veggie Supreme", price: 399, description: "Loaded veggie pizza" }
-  ],
-  3: [
-    { id: 5, restaurant_id: 3, item_name: "California Roll", price: 350, description: "Fresh sushi roll" },
-    { id: 6, restaurant_id: 3, item_name: "Miso Soup", price: 120, description: "Traditional Japanese soup" }
-  ]
-};
-
+// GET all restaurants from MySQL
 app.get("/api/restaurants", (req, res) => {
-  res.json(restaurants);
+  const query = "SELECT * FROM restaurants";
+
+  db.query(query, (err, results) => {
+    if (err) {
+      console.error("Error fetching restaurants:", err);
+      return res.status(500).json({ error: "Database error" });
+    }
+
+    res.json(results);
+  });
 });
 
+// GET menu by restaurant ID from MySQL
 app.get("/api/menu/:restaurantId", (req, res) => {
   const restaurantId = req.params.restaurantId;
-  res.json(menu[restaurantId] || []);
+  const query = "SELECT * FROM menu WHERE restaurant_id = ?";
+
+  db.query(query, [restaurantId], (err, results) => {
+    if (err) {
+      console.error("Error fetching menu:", err);
+      return res.status(500).json({ error: "Database error" });
+    }
+
+    res.json(results);
+  });
 });
 
+// POST order to MySQL
 app.post("/api/order", (req, res) => {
   const { cart, totalAmount } = req.body;
 
-  if (!cart || !Array.isArray(cart) || cart.length === 0) {
-    return res.status(400).json({ message: "Cart is empty" });
+  if (!cart || cart.length === 0) {
+    return res.status(400).json({ error: "Cart is empty" });
   }
 
-  res.json({ message: "Order placed successfully", totalAmount });
+  const orderQuery =
+    "INSERT INTO orders (user_id, total_amount, status) VALUES (?, ?, ?)";
+  const orderValues = [null, totalAmount, "placed"];
+
+  db.query(orderQuery, orderValues, (err, orderResult) => {
+    if (err) {
+      console.error("Error creating order:", err);
+      return res.status(500).json({ error: "Database error while creating order" });
+    }
+
+    const orderId = orderResult.insertId;
+
+    const orderItemsValues = cart.map((item) => [
+      orderId,
+      item.id,
+      item.quantity,
+      item.price
+    ]);
+
+    const orderItemsQuery =
+      "INSERT INTO order_items (order_id, menu_id, quantity, price) VALUES ?";
+
+    db.query(orderItemsQuery, [orderItemsValues], (err) => {
+      if (err) {
+        console.error("Error inserting order items:", err);
+        return res.status(500).json({ error: "Database error while saving order items" });
+      }
+
+      res.json({
+        message: "Order placed successfully",
+        orderId: orderId
+      });
+    });
+  });
 });
 
 app.listen(PORT, () => {
