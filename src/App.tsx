@@ -1,38 +1,14 @@
-<<<<<<< HEAD
-import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { AuthProvider } from "@/contexts/AuthContext";
-import { CartProvider } from "@/contexts/CartContext";
-import { Toaster } from "@/components/ui/toaster";
-import HomePage from "@/pages/HomePage";
-import RestaurantPage from "@/pages/RestaurantPage";
-import CartPage from "@/pages/CartPage";
-import CheckoutPage from "@/pages/CheckoutPage";
-import OrdersPage from "@/pages/OrdersPage";
-import OrderTrackingPage from "@/pages/OrderTrackingPage";
-import SearchPage from "@/pages/SearchPage";
-import ProfilePage from "@/pages/ProfilePage";
-import LoginPage from "@/pages/LoginPage";
-import SignupPage from "@/pages/SignupPage";
-import AdminDashboard from "@/pages/AdminDashboard";
-import DeliveryDashboard from "@/pages/DeliveryDashboard";
-import SupportPage from "@/pages/SupportPage";
-import FavoritesPage from "@/pages/FavoritesPage";
-import InvoicePage from "@/pages/InvoicePage";
-import NotificationsPage from "@/pages/NotificationsPage";
-import NotFound from "@/pages/NotFound";
-=======
 import { useEffect, useMemo, useState } from "react";
 import {
+  Bell,
   MapPin,
-  Search,
-  Map,
-  ShoppingBag,
-  User,
-  Clock3,
-  Bike,
-  Star,
-  Plus,
   Minus,
+  Plus,
+  Search,
+  ShoppingBag,
+  Star,
+  Timer,
+  User,
 } from "lucide-react";
 
 type Restaurant = {
@@ -54,7 +30,6 @@ type MenuItem = {
 type CartItem = MenuItem & {
   quantity: number;
 };
->>>>>>> f852a6b (Restore backend API and fix production deployment)
 
 const categories = [
   "All",
@@ -71,46 +46,18 @@ const categories = [
 ];
 
 function App() {
-<<<<<<< HEAD
-  return (
-    <BrowserRouter>
-      <AuthProvider>
-        <CartProvider>
-          <Routes>
-            <Route path="/" element={<HomePage />} />
-            <Route path="/restaurant/:id" element={<RestaurantPage />} />
-            <Route path="/cart" element={<CartPage />} />
-            <Route path="/checkout" element={<CheckoutPage />} />
-            <Route path="/orders" element={<OrdersPage />} />
-            <Route path="/order/:id" element={<OrderTrackingPage />} />
-            <Route path="/search" element={<SearchPage />} />
-            <Route path="/profile" element={<ProfilePage />} />
-            <Route path="/login" element={<LoginPage />} />
-            <Route path="/signup" element={<SignupPage />} />
-            <Route path="/admin" element={<AdminDashboard />} />
-            <Route path="/delivery" element={<DeliveryDashboard />} />
-            <Route path="/support" element={<SupportPage />} />
-            <Route path="/favorites" element={<FavoritesPage />} />
-            <Route path="/invoice/:id" element={<InvoicePage />} />
-            <Route path="/notifications" element={<NotificationsPage />} />
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-          <Toaster />
-        </CartProvider>
-      </AuthProvider>
-    </BrowserRouter>
-=======
   const [restaurants, setRestaurants] = useState<Restaurant[]>([]);
-  const [selectedRestaurant, setSelectedRestaurant] = useState<Restaurant | null>(null);
+  const [selectedRestaurant, setSelectedRestaurant] =
+    useState<Restaurant | null>(null);
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
   const [cart, setCart] = useState<CartItem[]>([]);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState("All");
+  const [search, setSearch] = useState("");
+  const [activeCategory, setActiveCategory] = useState("All");
 
   useEffect(() => {
     fetch("/api/restaurants")
       .then((res) => res.json())
-      .then((data: Restaurant[]) => setRestaurants(data))
+      .then((data) => setRestaurants(data))
       .catch((err) => console.error("Error fetching restaurants:", err));
   }, []);
 
@@ -119,14 +66,14 @@ function App() {
 
     fetch(`/api/menu/${restaurant.id}`)
       .then((res) => res.json())
-      .then((data: MenuItem[]) => setMenuItems(data))
+      .then((data) => setMenuItems(data))
       .catch((err) => console.error("Error fetching menu:", err));
   };
 
-  const addToCart = (item: MenuItem | CartItem) => {
-    const existing = cart.find((cartItem) => cartItem.id === item.id);
+  const addToCart = (item: MenuItem) => {
+    const existingItem = cart.find((cartItem) => cartItem.id === item.id);
 
-    if (existing) {
+    if (existingItem) {
       const updatedCart = cart.map((cartItem) =>
         cartItem.id === item.id
           ? { ...cartItem, quantity: cartItem.quantity + 1 }
@@ -138,25 +85,25 @@ function App() {
     }
   };
 
-  const removeFromCart = (id: number) => {
-    const existing = cart.find((item) => item.id === id);
+  const decreaseQuantity = (itemId: number) => {
+    const existingItem = cart.find((cartItem) => cartItem.id === itemId);
 
-    if (!existing) return;
+    if (!existingItem) return;
 
-    if (existing.quantity === 1) {
-      setCart(cart.filter((item) => item.id !== id));
+    if (existingItem.quantity === 1) {
+      setCart(cart.filter((cartItem) => cartItem.id !== itemId));
     } else {
-      const updatedCart = cart.map((item) =>
-        item.id === id
-          ? { ...item, quantity: item.quantity - 1 }
-          : item
+      const updatedCart = cart.map((cartItem) =>
+        cartItem.id === itemId
+          ? { ...cartItem, quantity: cartItem.quantity - 1 }
+          : cartItem
       );
       setCart(updatedCart);
     }
   };
 
-  const totalAmount = cart.reduce(
-    (total, item) => total + item.price * item.quantity,
+  const totalPrice = cart.reduce(
+    (sum, item) => sum + item.price * item.quantity,
     0
   );
 
@@ -166,10 +113,7 @@ function App() {
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({
-        cart,
-        totalAmount,
-      }),
+      body: JSON.stringify({ cart, totalAmount: totalPrice }),
     })
       .then((res) => res.json())
       .then((data) => {
@@ -183,19 +127,23 @@ function App() {
 
   const filteredRestaurants = useMemo(() => {
     return restaurants.filter((restaurant) => {
-      const searchMatch =
-        restaurant.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        restaurant.location.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesSearch =
+        restaurant.name.toLowerCase().includes(search.toLowerCase()) ||
+        restaurant.location.toLowerCase().includes(search.toLowerCase());
 
-      if (selectedCategory === "All") return searchMatch;
+      if (activeCategory === "All") {
+        return matchesSearch;
+      }
 
       return (
-        searchMatch &&
-        (restaurant.name.toLowerCase().includes(selectedCategory.toLowerCase()) ||
-          restaurant.location.toLowerCase().includes(selectedCategory.toLowerCase()))
+        matchesSearch &&
+        (restaurant.name.toLowerCase().includes(activeCategory.toLowerCase()) ||
+          restaurant.location
+            .toLowerCase()
+            .includes(activeCategory.toLowerCase()))
       );
     });
-  }, [restaurants, searchTerm, selectedCategory]);
+  }, [restaurants, search, activeCategory]);
 
   return (
     <div
@@ -227,11 +175,7 @@ function App() {
           }}
         >
           <div
-            style={{
-              fontSize: "22px",
-              fontWeight: 800,
-              minWidth: "180px",
-            }}
+            style={{ fontSize: "22px", fontWeight: 800, minWidth: "180px" }}
           >
             <span style={{ color: "#ef4444" }}>Feast</span>{" "}
             <span style={{ color: "#111827" }}>Finder</span>
@@ -265,8 +209,8 @@ function App() {
             <input
               type="text"
               placeholder="Search for restaurants or dishes..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
               style={{
                 border: "none",
                 outline: "none",
@@ -288,16 +232,22 @@ function App() {
             }}
           >
             <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-              <Map size={18} />
+              <MapPin size={18} />
               <span>Map</span>
             </div>
-            <ShoppingBag size={20} />
+            <Bell size={20} />
             <User size={20} />
           </div>
         </div>
       </header>
 
-      <main style={{ maxWidth: "1280px", margin: "0 auto", padding: "32px 24px 60px" }}>
+      <main
+        style={{
+          maxWidth: "1280px",
+          margin: "0 auto",
+          padding: "32px 24px 60px",
+        }}
+      >
         <section
           style={{
             backgroundColor: "white",
@@ -318,13 +268,8 @@ function App() {
           >
             What are you craving?
           </h1>
-          <p
-            style={{
-              marginTop: "10px",
-              color: "#6b7280",
-              fontSize: "20px",
-            }}
-          >
+
+          <p style={{ marginTop: "10px", color: "#6b7280", fontSize: "20px" }}>
             Discover the best food near you
           </p>
 
@@ -344,8 +289,8 @@ function App() {
             <input
               type="text"
               placeholder="Search for restaurants or dishes..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
               style={{
                 border: "none",
                 outline: "none",
@@ -366,21 +311,24 @@ function App() {
             }}
           >
             {categories.map((category) => {
-              const active = selectedCategory === category;
+              const isActive = activeCategory === category;
+
               return (
                 <button
                   key={category}
-                  onClick={() => setSelectedCategory(category)}
+                  onClick={() => setActiveCategory(category)}
                   style={{
                     padding: "12px 20px",
                     borderRadius: "999px",
-                    border: active ? "none" : "1px solid #e5e7eb",
-                    backgroundColor: active ? "#ef4444" : "white",
-                    color: active ? "white" : "#111827",
+                    border: isActive ? "none" : "1px solid #e5e7eb",
+                    backgroundColor: isActive ? "#ef4444" : "white",
+                    color: isActive ? "white" : "#111827",
                     cursor: "pointer",
                     fontSize: "15px",
                     fontWeight: 600,
-                    boxShadow: active ? "0 8px 20px rgba(239,68,68,0.25)" : "none",
+                    boxShadow: isActive
+                      ? "0 8px 20px rgba(239,68,68,0.25)"
+                      : "none",
                   }}
                 >
                   {category}
@@ -391,7 +339,9 @@ function App() {
         </section>
 
         <section style={{ marginTop: "32px" }}>
-          <h2 style={{ fontSize: "28px", marginBottom: "18px" }}>Popular restaurants</h2>
+          <h2 style={{ fontSize: "28px", marginBottom: "18px" }}>
+            Popular restaurants
+          </h2>
 
           <div
             style={{
@@ -428,6 +378,7 @@ function App() {
                       display: "block",
                     }}
                   />
+
                   <div
                     style={{
                       position: "absolute",
@@ -443,6 +394,7 @@ function App() {
                   >
                     Featured
                   </div>
+
                   <div
                     style={{
                       position: "absolute",
@@ -470,8 +422,16 @@ function App() {
                     }}
                   >
                     <div>
-                      <h3 style={{ margin: 0, fontSize: "20px" }}>{restaurant.name}</h3>
-                      <p style={{ margin: "8px 0 0", color: "#6b7280", fontSize: "15px" }}>
+                      <h3 style={{ margin: 0, fontSize: "20px" }}>
+                        {restaurant.name}
+                      </h3>
+                      <p
+                        style={{
+                          margin: "8px 0 0",
+                          color: "#6b7280",
+                          fontSize: "15px",
+                        }}
+                      >
                         {restaurant.location}
                       </p>
                     </div>
@@ -504,14 +464,20 @@ function App() {
                       flexWrap: "wrap",
                     }}
                   >
-                    <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                      <Clock3 size={16} />
+                    <div
+                      style={{ display: "flex", alignItems: "center", gap: "6px" }}
+                    >
+                      <Timer size={16} />
                       <span>25-35 min</span>
                     </div>
-                    <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                      <Bike size={16} />
+
+                    <div
+                      style={{ display: "flex", alignItems: "center", gap: "6px" }}
+                    >
+                      <ShoppingBag size={16} />
                       <span>2.1 km</span>
                     </div>
+
                     <span>$$$</span>
                   </div>
                 </div>
@@ -533,7 +499,14 @@ function App() {
               <h2 style={{ marginTop: 0, fontSize: "30px" }}>
                 Menu — {selectedRestaurant.name}
               </h2>
-              <p style={{ color: "#6b7280", marginTop: "-6px", marginBottom: "22px" }}>
+
+              <p
+                style={{
+                  color: "#6b7280",
+                  marginTop: "-6px",
+                  marginBottom: "22px",
+                }}
+              >
                 Pick your favorite dishes and add them to cart
               </p>
 
@@ -557,7 +530,10 @@ function App() {
                         backgroundColor: "#fff",
                       }}
                     >
-                      <h3 style={{ marginTop: 0, marginBottom: "8px" }}>{item.item_name}</h3>
+                      <h3 style={{ marginTop: 0, marginBottom: "8px" }}>
+                        {item.item_name}
+                      </h3>
+
                       <p
                         style={{
                           color: "#6b7280",
@@ -568,6 +544,7 @@ function App() {
                       >
                         {item.description}
                       </p>
+
                       <p
                         style={{
                           fontSize: "20px",
@@ -578,6 +555,7 @@ function App() {
                       >
                         ₹{item.price}
                       </p>
+
                       <button
                         onClick={() => addToCart(item)}
                         style={{
@@ -635,9 +613,15 @@ function App() {
                       </p>
                     </div>
 
-                    <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "10px",
+                      }}
+                    >
                       <button
-                        onClick={() => removeFromCart(item.id)}
+                        onClick={() => decreaseQuantity(item.id)}
                         style={{
                           width: "34px",
                           height: "34px",
@@ -649,9 +633,17 @@ function App() {
                       >
                         <Minus size={16} />
                       </button>
-                      <span style={{ minWidth: "20px", textAlign: "center", fontWeight: 700 }}>
+
+                      <span
+                        style={{
+                          minWidth: "20px",
+                          textAlign: "center",
+                          fontWeight: 700,
+                        }}
+                      >
                         {item.quantity}
                       </span>
+
                       <button
                         onClick={() => addToCart(item)}
                         style={{
@@ -680,7 +672,9 @@ function App() {
                     gap: "16px",
                   }}
                 >
-                  <h3 style={{ margin: 0, fontSize: "26px" }}>Total: ₹{totalAmount}</h3>
+                  <h3 style={{ margin: 0, fontSize: "26px" }}>
+                    Total: ₹{totalPrice}
+                  </h3>
 
                   <button
                     onClick={handleCheckout}
@@ -704,7 +698,6 @@ function App() {
         </section>
       </main>
     </div>
->>>>>>> f852a6b (Restore backend API and fix production deployment)
   );
 }
 
