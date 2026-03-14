@@ -522,7 +522,412 @@ router.post('/verify', authenticate, async (req, res, next) => {
 module.exports = router;
 */
 
+// ============ FILE: backend/src/routes/restaurants.js ============
+/*
+const express = require('express');
+const { PrismaClient } = require('@prisma/client');
+const { authenticate, authorize } = require('../middleware/auth');
+
+const router = express.Router();
+const prisma = new PrismaClient();
+
+// Get all restaurants
+router.get('/', async (req, res, next) => {
+  try {
+    const { cuisine, veg, search, sort } = req.query;
+    const where = { isActive: true };
+    if (veg === 'true') where.isVeg = true;
+    if (search) where.name = { contains: search };
+    
+    const orderBy = sort === 'rating' ? { rating: 'desc' } 
+      : sort === 'cost' ? { deliveryFee: 'asc' } 
+      : { rating: 'desc' };
+
+    const restaurants = await prisma.restaurant.findMany({ where, orderBy });
+    res.json(restaurants.map(r => ({ ...r, cuisine: JSON.parse(r.cuisine) })));
+  } catch (error) { next(error); }
+});
+
+// Get restaurant by ID with menu
+router.get('/:id', async (req, res, next) => {
+  try {
+    const restaurant = await prisma.restaurant.findUnique({
+      where: { id: req.params.id },
+      include: { menuItems: { where: { isAvailable: true } }, reviews: { include: { user: { select: { name: true } } } } }
+    });
+    if (!restaurant) return res.status(404).json({ error: 'Restaurant not found' });
+    res.json({ ...restaurant, cuisine: JSON.parse(restaurant.cuisine) });
+  } catch (error) { next(error); }
+});
+
+// Admin: create restaurant
+router.post('/', authenticate, authorize('ADMIN'), async (req, res, next) => {
+  try {
+    const restaurant = await prisma.restaurant.create({
+      data: { ...req.body, cuisine: JSON.stringify(req.body.cuisine) }
+    });
+    res.status(201).json(restaurant);
+  } catch (error) { next(error); }
+});
+
+// Admin: update restaurant
+router.put('/:id', authenticate, authorize('ADMIN'), async (req, res, next) => {
+  try {
+    const data = { ...req.body };
+    if (data.cuisine) data.cuisine = JSON.stringify(data.cuisine);
+    const restaurant = await prisma.restaurant.update({ where: { id: req.params.id }, data });
+    res.json(restaurant);
+  } catch (error) { next(error); }
+});
+
+// Admin: delete restaurant
+router.delete('/:id', authenticate, authorize('ADMIN'), async (req, res, next) => {
+  try {
+    await prisma.restaurant.update({ where: { id: req.params.id }, data: { isActive: false } });
+    res.json({ message: 'Restaurant deactivated' });
+  } catch (error) { next(error); }
+});
+
+module.exports = router;
+*/
+
+// ============ FILE: backend/src/routes/favorites.js ============
+/*
+const express = require('express');
+const { PrismaClient } = require('@prisma/client');
+const { authenticate } = require('../middleware/auth');
+
+const router = express.Router();
+const prisma = new PrismaClient();
+
+// Get user favorites
+router.get('/', authenticate, async (req, res, next) => {
+  try {
+    const favorites = await prisma.favorite.findMany({
+      where: { userId: req.user.id },
+      include: { restaurant: true }
+    });
+    res.json(favorites.map(f => ({ ...f.restaurant, cuisine: JSON.parse(f.restaurant.cuisine) })));
+  } catch (error) { next(error); }
+});
+
+// Toggle favorite
+router.post('/:restaurantId', authenticate, async (req, res, next) => {
+  try {
+    const existing = await prisma.favorite.findUnique({
+      where: { userId_restaurantId: { userId: req.user.id, restaurantId: req.params.restaurantId } }
+    });
+    if (existing) {
+      await prisma.favorite.delete({ where: { id: existing.id } });
+      res.json({ favorited: false });
+    } else {
+      await prisma.favorite.create({ data: { userId: req.user.id, restaurantId: req.params.restaurantId } });
+      res.json({ favorited: true });
+    }
+  } catch (error) { next(error); }
+});
+
+module.exports = router;
+*/
+
+// ============ FILE: backend/src/routes/notifications.js ============
+/*
+const express = require('express');
+const { PrismaClient } = require('@prisma/client');
+const { authenticate } = require('../middleware/auth');
+
+const router = express.Router();
+const prisma = new PrismaClient();
+
+// Get notifications
+router.get('/', authenticate, async (req, res, next) => {
+  try {
+    const notifications = await prisma.notification.findMany({
+      where: { userId: req.user.id },
+      orderBy: { createdAt: 'desc' },
+      take: 50
+    });
+    res.json(notifications);
+  } catch (error) { next(error); }
+});
+
+// Mark all as read
+router.patch('/read-all', authenticate, async (req, res, next) => {
+  try {
+    await prisma.notification.updateMany({
+      where: { userId: req.user.id, isRead: false },
+      data: { isRead: true }
+    });
+    res.json({ success: true });
+  } catch (error) { next(error); }
+});
+
+module.exports = router;
+*/
+
+// ============ FILE: backend/src/routes/admin.js ============
+/*
+const express = require('express');
+const { PrismaClient } = require('@prisma/client');
+const { authenticate, authorize } = require('../middleware/auth');
+
+const router = express.Router();
+const prisma = new PrismaClient();
+
+// Dashboard stats
+router.get('/stats', authenticate, authorize('ADMIN'), async (req, res, next) => {
+  try {
+    const today = new Date(); today.setHours(0, 0, 0, 0);
+    
+    const [totalOrders, ordersToday, totalRevenue, revenueToday, activeUsers, activeRestaurants, deliveryPartners] = await Promise.all([
+      prisma.order.count(),
+      prisma.order.count({ where: { createdAt: { gte: today } } }),
+      prisma.order.aggregate({ _sum: { total: true } }),
+      prisma.order.aggregate({ where: { createdAt: { gte: today } }, _sum: { total: true } }),
+      prisma.user.count({ where: { role: 'CUSTOMER' } }),
+      prisma.restaurant.count({ where: { isActive: true } }),
+      prisma.user.count({ where: { role: 'DELIVERY' } }),
+    ]);
+
+    res.json({
+      totalOrders,
+      ordersToday,
+      totalRevenue: totalRevenue._sum.total || 0,
+      revenueToday: revenueToday._sum.total || 0,
+      activeUsers,
+      activeRestaurants,
+      deliveryPartners,
+    });
+  } catch (error) { next(error); }
+});
+
+// Revenue chart data (last 7 days)
+router.get('/revenue-chart', authenticate, authorize('ADMIN'), async (req, res, next) => {
+  try {
+    const days = 7;
+    const data = [];
+    for (let i = days - 1; i >= 0; i--) {
+      const date = new Date(); date.setDate(date.getDate() - i);
+      const start = new Date(date); start.setHours(0, 0, 0, 0);
+      const end = new Date(date); end.setHours(23, 59, 59, 999);
+      
+      const [revenue, orders] = await Promise.all([
+        prisma.order.aggregate({ where: { createdAt: { gte: start, lte: end } }, _sum: { total: true } }),
+        prisma.order.count({ where: { createdAt: { gte: start, lte: end } } }),
+      ]);
+      
+      data.push({ day: date.toLocaleDateString('en', { weekday: 'short' }), revenue: revenue._sum.total || 0, orders });
+    }
+    res.json(data);
+  } catch (error) { next(error); }
+});
+
+// Manage users
+router.get('/users', authenticate, authorize('ADMIN'), async (req, res, next) => {
+  try {
+    const users = await prisma.user.findMany({
+      select: { id: true, name: true, email: true, role: true, phone: true, createdAt: true },
+      orderBy: { createdAt: 'desc' }
+    });
+    res.json(users);
+  } catch (error) { next(error); }
+});
+
+// Manage all orders
+router.get('/orders', authenticate, authorize('ADMIN'), async (req, res, next) => {
+  try {
+    const orders = await prisma.order.findMany({
+      include: { customer: { select: { name: true } }, restaurant: { select: { name: true } }, items: { include: { menuItem: true } } },
+      orderBy: { createdAt: 'desc' }
+    });
+    res.json(orders);
+  } catch (error) { next(error); }
+});
+
+module.exports = router;
+*/
+
+// ============ FILE: backend/src/routes/delivery.js ============
+/*
+const express = require('express');
+const { PrismaClient } = require('@prisma/client');
+const { authenticate, authorize } = require('../middleware/auth');
+
+const router = express.Router();
+const prisma = new PrismaClient();
+
+// Get assigned orders
+router.get('/orders', authenticate, authorize('DELIVERY'), async (req, res, next) => {
+  try {
+    const orders = await prisma.order.findMany({
+      where: { deliveryPartnerId: req.user.id, status: { in: ['PLACED', 'PREPARING', 'OUT_FOR_DELIVERY'] } },
+      include: { restaurant: true, customer: { select: { name: true, phone: true } }, items: { include: { menuItem: true } } },
+      orderBy: { createdAt: 'desc' }
+    });
+    res.json(orders);
+  } catch (error) { next(error); }
+});
+
+// Update delivery status
+router.patch('/orders/:id/status', authenticate, authorize('DELIVERY'), async (req, res, next) => {
+  try {
+    const order = await prisma.order.update({
+      where: { id: req.params.id },
+      data: { status: req.body.status }
+    });
+    res.json(order);
+  } catch (error) { next(error); }
+});
+
+// Delivery history & earnings
+router.get('/history', authenticate, authorize('DELIVERY'), async (req, res, next) => {
+  try {
+    const orders = await prisma.order.findMany({
+      where: { deliveryPartnerId: req.user.id, status: 'DELIVERED' },
+      include: { restaurant: { select: { name: true } } },
+      orderBy: { createdAt: 'desc' }
+    });
+    const totalEarnings = orders.length * 40; // ₹40 per delivery
+    res.json({ orders, totalEarnings, totalDeliveries: orders.length });
+  } catch (error) { next(error); }
+});
+
+module.exports = router;
+*/
+
+// ============ FILE: backend/prisma/seed.js ============
+/*
+const { PrismaClient } = require('@prisma/client');
+const bcrypt = require('bcryptjs');
+const prisma = new PrismaClient();
+
+async function main() {
+  // Seed admin user
+  const adminPassword = await bcrypt.hash('admin123', 12);
+  await prisma.user.upsert({
+    where: { email: 'admin@feastfinder.com' },
+    update: {},
+    create: { name: 'Admin', email: 'admin@feastfinder.com', password: adminPassword, role: 'ADMIN' }
+  });
+
+  // Seed restaurants
+  const restaurants = [
+    { name: 'Paradise Biryani', cuisine: '["Biryani","North Indian"]', rating: 4.5, reviewCount: 2340, deliveryTime: '30-35 min', deliveryFee: 30, priceRange: '₹₹', address: 'Banjara Hills, Hyderabad', isVeg: false },
+    { name: 'Italiano Kitchen', cuisine: '["Italian","Pizza"]', rating: 4.3, reviewCount: 1890, deliveryTime: '25-30 min', deliveryFee: 40, priceRange: '₹₹₹', address: 'Jubilee Hills, Hyderabad', isVeg: false },
+    { name: 'Green Leaf Veg', cuisine: '["South Indian","Healthy"]', rating: 4.6, reviewCount: 980, deliveryTime: '20-25 min', deliveryFee: 20, priceRange: '₹', address: 'Madhapur, Hyderabad', isVeg: true },
+    { name: 'Burger Junction', cuisine: '["Burgers","Street Food"]', rating: 4.4, reviewCount: 3200, deliveryTime: '15-20 min', deliveryFee: 25, priceRange: '₹', address: 'Kukatpally, Hyderabad', isVeg: false },
+  ];
+
+  for (const r of restaurants) {
+    await prisma.restaurant.create({ data: r });
+  }
+
+  // Seed coupons
+  await prisma.coupon.createMany({
+    data: [
+      { code: 'WELCOME50', discount: 50, maxDiscount: 100, minOrder: 199, description: '50% off on your first order' },
+      { code: 'FREEDEL', discount: 50, maxDiscount: 50, minOrder: 149, description: 'Free delivery on orders above ₹149' },
+      { code: 'FEAST200', discount: 200, maxDiscount: 200, minOrder: 599, description: 'Flat ₹200 off on orders above ₹599' },
+    ]
+  });
+
+  console.log('Database seeded successfully!');
+}
+
+main().catch(console.error).finally(() => prisma.$disconnect());
+*/
+
 // ============ DEPLOYMENT FILES ============
+
+// FILE: ecosystem.config.js (PM2)
+/*
+module.exports = {
+  apps: [{
+    name: 'feast-finder-api',
+    script: 'src/server.js',
+    instances: 'max',
+    exec_mode: 'cluster',
+    env: { NODE_ENV: 'development' },
+    env_production: { NODE_ENV: 'production' }
+  }]
+};
+*/
+
+// FILE: nginx.conf
+/*
+server {
+    listen 80;
+    server_name 13.235.162.211;
+
+    # Frontend
+    location / {
+        root /var/www/feast-finder/frontend/dist;
+        try_files $uri $uri/ /index.html;
+    }
+
+    # API proxy
+    location /api/ {
+        proxy_pass http://localhost:5000;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_cache_bypass $http_upgrade;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    }
+}
+*/
+
+// FILE: .github/workflows/deploy.yml
+/*
+name: Deploy Feast Finder to EC2
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install & Build Frontend
+        run: |
+          npm ci
+          npm run build
+
+      - name: Deploy to EC2
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            cd /var/www/feast-finder
+            git pull origin main
+            
+            # Backend
+            cd backend
+            npm ci --production
+            npx prisma migrate deploy
+            pm2 restart ecosystem.config.js --env production
+            
+            # Frontend
+            cd ../
+            npm ci
+            npm run build
+            sudo cp -r dist/* /var/www/feast-finder/frontend/dist/
+            sudo systemctl reload nginx
+*/
+
+export {};
 
 // FILE: ecosystem.config.js (PM2)
 /*
