@@ -1,5 +1,5 @@
 import { Link, useNavigate } from "react-router-dom";
-import { ShoppingCart, User, MapPin, Search, Menu, X, LogOut } from "lucide-react";
+import { ShoppingCart, User, MapPin, Search, Menu, X, LogOut, Heart, Bell } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCart } from "@/contexts/CartContext";
 import { useState } from "react";
@@ -14,15 +14,13 @@ export default function Navbar() {
   return (
     <nav className="sticky top-0 z-50 bg-card border-b border-border shadow-sm">
       <div className="container mx-auto px-4 h-16 flex items-center justify-between gap-4">
-        {/* Logo */}
         <Link to="/" className="flex items-center gap-2 shrink-0">
           <div className="w-8 h-8 rounded-lg gradient-primary flex items-center justify-center">
-            <span className="text-primary-foreground font-display font-bold text-sm">Z</span>
+            <span className="text-primary-foreground font-display font-bold text-xs">FF</span>
           </div>
-          <span className="font-display font-bold text-xl text-foreground hidden sm:block">Zomato</span>
+          <span className="font-display font-bold text-xl text-foreground hidden sm:block">Feast Finder</span>
         </Link>
 
-        {/* Location */}
         <button className="hidden md:flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors">
           <MapPin className="w-4 h-4 text-primary" />
           <span className="font-medium text-foreground">Hyderabad</span>
@@ -30,7 +28,6 @@ export default function Navbar() {
           <span className="truncate max-w-[120px]">Banjara Hills</span>
         </button>
 
-        {/* Search */}
         <div className="hidden md:flex flex-1 max-w-md">
           <div className="relative w-full">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
@@ -44,21 +41,29 @@ export default function Navbar() {
           </div>
         </div>
 
-        {/* Actions */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1">
           {isAuthenticated && user?.role === "customer" && (
-            <Link to="/cart" className="relative p-2 rounded-lg hover:bg-muted transition-colors">
-              <ShoppingCart className="w-5 h-5" />
-              {itemCount > 0 && (
-                <span className="absolute -top-0.5 -right-0.5 w-5 h-5 rounded-full gradient-primary text-[10px] text-primary-foreground flex items-center justify-center font-bold">
-                  {itemCount}
-                </span>
-              )}
-            </Link>
+            <>
+              <Link to="/favorites" className="p-2 rounded-lg hover:bg-muted transition-colors" title="Favorites">
+                <Heart className="w-5 h-5" />
+              </Link>
+              <Link to="/notifications" className="relative p-2 rounded-lg hover:bg-muted transition-colors" title="Notifications">
+                <Bell className="w-5 h-5" />
+                <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-primary" />
+              </Link>
+              <Link to="/cart" className="relative p-2 rounded-lg hover:bg-muted transition-colors" title="Cart">
+                <ShoppingCart className="w-5 h-5" />
+                {itemCount > 0 && (
+                  <span className="absolute -top-0.5 -right-0.5 w-5 h-5 rounded-full gradient-primary text-[10px] text-primary-foreground flex items-center justify-center font-bold">
+                    {itemCount}
+                  </span>
+                )}
+              </Link>
+            </>
           )}
 
           {isAuthenticated ? (
-            <div className="hidden md:flex items-center gap-2">
+            <div className="hidden md:flex items-center gap-1">
               <Link to={user?.role === "admin" ? "/admin" : user?.role === "delivery" ? "/delivery" : "/profile"}>
                 <Button variant="ghost" size="sm" className="gap-2">
                   <User className="w-4 h-4" />
@@ -82,7 +87,6 @@ export default function Navbar() {
         </div>
       </div>
 
-      {/* Mobile menu */}
       {mobileOpen && (
         <div className="md:hidden border-t border-border bg-card p-4 animate-fade-in space-y-3">
           <div className="relative">
@@ -95,7 +99,11 @@ export default function Navbar() {
                 <User className="w-4 h-4" /><span>{user?.name}</span>
               </Link>
               {user?.role === "customer" && (
-                <Link to="/orders" className="block p-2 rounded-lg hover:bg-muted" onClick={() => setMobileOpen(false)}>My Orders</Link>
+                <>
+                  <Link to="/orders" className="block p-2 rounded-lg hover:bg-muted" onClick={() => setMobileOpen(false)}>My Orders</Link>
+                  <Link to="/favorites" className="flex items-center gap-2 p-2 rounded-lg hover:bg-muted" onClick={() => setMobileOpen(false)}><Heart className="w-4 h-4" />Favorites</Link>
+                  <Link to="/notifications" className="flex items-center gap-2 p-2 rounded-lg hover:bg-muted" onClick={() => setMobileOpen(false)}><Bell className="w-4 h-4" />Notifications</Link>
+                </>
               )}
               <button onClick={() => { logout(); setMobileOpen(false); }} className="flex items-center gap-2 p-2 rounded-lg hover:bg-muted text-destructive w-full">
                 <LogOut className="w-4 h-4" /><span>Logout</span>
