@@ -211,6 +211,33 @@ export default function HomePage() {
         )}
       </section>
 
+      {/* Map Section */}
+      <section className="container mx-auto px-4 mt-12">
+        <h2 className="font-display text-xl md:text-2xl font-bold flex items-center gap-2 mb-6">
+          <MapPin className="w-5 h-5 text-primary" />
+          Restaurants Near You
+        </h2>
+        <MapView
+          markers={[
+            { name: "Barbeque Nation", lat: 19.0330, lng: 73.0297 },
+            { name: "Urban Tadka", lat: 19.0368, lng: 73.0158 },
+            { name: "Achija", lat: 19.0480, lng: 73.0685 },
+            { name: "Cream Centre", lat: 19.0590, lng: 73.0710 },
+            { name: "Bhagat Tarachand", lat: 19.0176, lng: 73.0374 },
+            { name: "Pranaam Fine Dine", lat: 19.0250, lng: 73.0200 },
+            { name: "Soy Street", lat: 19.0650, lng: 73.0750 },
+            { name: "Hitchki", lat: 19.0380, lng: 73.0770 },
+            { name: "Global Fusion", lat: 19.0425, lng: 73.0225 },
+            { name: "Pot Pourri", lat: 19.0500, lng: 73.0600 },
+            { name: "Mahesh Lunch Home", lat: 19.0300, lng: 73.0450 },
+            { name: "Golden Punjab", lat: 19.0550, lng: 73.0350 },
+            { name: "The Food Studio", lat: 19.0620, lng: 73.0500 },
+            { name: "Cafe Monza", lat: 19.0700, lng: 73.0400 },
+            { name: "Bombay Barbeque", lat: 19.0450, lng: 73.0150 },
+          ]}
+        />
+      </section>
+
       <div className="mt-12" />
       <Footer />
     </div>
