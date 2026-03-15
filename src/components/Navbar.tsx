@@ -1,5 +1,5 @@
 import { Link, useNavigate } from "react-router-dom";
-import { ShoppingCart, User, MapPin, Search, Menu, X, LogOut, Heart, Bell } from "lucide-react";
+import { ShoppingCart, User, MapPin, Search, Menu, X, LogOut, Heart, Bell, Home, Utensils, Info, Phone } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCart } from "@/contexts/CartContext";
 import { useState } from "react";
@@ -18,14 +18,28 @@ export default function Navbar() {
           <div className="w-8 h-8 rounded-lg gradient-primary flex items-center justify-center">
             <span className="text-primary-foreground font-display font-bold text-xs">FF</span>
           </div>
-          <span className="font-display font-bold text-xl text-foreground hidden sm:block">Feast Finder</span>
+          <span className="font-display font-bold text-xl text-foreground hidden sm:block">Feast Finder 🍽️</span>
         </Link>
+
+        {/* Desktop Nav Links */}
+        <div className="hidden lg:flex items-center gap-6">
+          <Link to="/" className="flex items-center gap-1.5 text-sm font-medium text-foreground hover:text-primary transition-colors">
+            <Home className="w-4 h-4" /> Home
+          </Link>
+          <Link to="/search" className="flex items-center gap-1.5 text-sm font-medium text-muted-foreground hover:text-primary transition-colors">
+            <Utensils className="w-4 h-4" /> Restaurants
+          </Link>
+          <a href="#" className="flex items-center gap-1.5 text-sm font-medium text-muted-foreground hover:text-primary transition-colors">
+            <Info className="w-4 h-4" /> About
+          </a>
+          <a href="#" className="flex items-center gap-1.5 text-sm font-medium text-muted-foreground hover:text-primary transition-colors">
+            <Phone className="w-4 h-4" /> Contact
+          </a>
+        </div>
 
         <button className="hidden md:flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors">
           <MapPin className="w-4 h-4 text-primary" />
-          <span className="font-medium text-foreground">Hyderabad</span>
-          <span className="text-muted-foreground">·</span>
-          <span className="truncate max-w-[120px]">Banjara Hills</span>
+          <span className="font-medium text-foreground">Navi Mumbai</span>
         </button>
 
         <div className="hidden md:flex flex-1 max-w-md">
@@ -93,6 +107,12 @@ export default function Navbar() {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <input type="text" placeholder="Search..." className="w-full h-10 pl-10 pr-4 rounded-lg bg-muted text-sm" onClick={() => { navigate("/search"); setMobileOpen(false); }} readOnly />
           </div>
+          <Link to="/" className="flex items-center gap-2 p-2 rounded-lg hover:bg-muted" onClick={() => setMobileOpen(false)}>
+            <Home className="w-4 h-4" /> Home
+          </Link>
+          <Link to="/search" className="flex items-center gap-2 p-2 rounded-lg hover:bg-muted" onClick={() => setMobileOpen(false)}>
+            <Utensils className="w-4 h-4" /> Restaurants
+          </Link>
           {isAuthenticated ? (
             <>
               <Link to={user?.role === "admin" ? "/admin" : user?.role === "delivery" ? "/delivery" : "/profile"} className="flex items-center gap-2 p-2 rounded-lg hover:bg-muted" onClick={() => setMobileOpen(false)}>
