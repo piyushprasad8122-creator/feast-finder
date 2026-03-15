@@ -14,7 +14,7 @@ export default function MapView({ lat = 19.076, lng = 72.8777, zoom = 11 }: MapV
   useEffect(() => {
     if (!mapContainer.current) return;
 
-    maptilersdk.config.apiKey = import.meta.env.VITE_MAPTILER_API_KEY;
+    maptilersdk.config.apiKey = "GJ2rB3ndX5ObID8HUZlJ";
 
     const map = new maptilersdk.Map({
       container: mapContainer.current,
