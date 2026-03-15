@@ -2,13 +2,20 @@ import { useEffect, useRef } from "react";
 import * as maptilersdk from "@maptiler/sdk";
 import "@maptiler/sdk/dist/maptiler-sdk.css";
 
+interface MarkerData {
+  name: string;
+  lat: number;
+  lng: number;
+}
+
 interface MapViewProps {
   lat?: number;
   lng?: number;
   zoom?: number;
+  markers?: MarkerData[];
 }
 
-export default function MapView({ lat = 19.076, lng = 72.8777, zoom = 11 }: MapViewProps) {
+export default function MapView({ lat = 19.044, lng = 73.02, zoom = 12, markers = [] }: MapViewProps) {
   const mapContainer = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
@@ -23,12 +30,22 @@ export default function MapView({ lat = 19.076, lng = 72.8777, zoom = 11 }: MapV
       zoom,
     });
 
-    new maptilersdk.Marker().setLngLat([lng, lat]).addTo(map);
+    markers.forEach((m) => {
+      const popup = new maptilersdk.Popup({ offset: 25 }).setText(m.name);
+      new maptilersdk.Marker({ color: "#e11d48" })
+        .setLngLat([m.lng, m.lat])
+        .setPopup(popup)
+        .addTo(map);
+    });
+
+    if (markers.length === 0) {
+      new maptilersdk.Marker({ color: "#e11d48" }).setLngLat([lng, lat]).addTo(map);
+    }
 
     return () => {
       map.remove();
     };
-  }, [lat, lng, zoom]);
+  }, [lat, lng, zoom, markers]);
 
-  return <div ref={mapContainer} className="w-full h-[400px] rounded-lg" />;
+  return <div ref={mapContainer} className="w-full h-[400px] rounded-2xl shadow-card" />;
 }

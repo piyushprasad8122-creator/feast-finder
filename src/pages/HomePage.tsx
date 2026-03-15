@@ -4,6 +4,7 @@ import { cuisineTypes, restaurants as mockRestaurants } from "@/data/mock";
 import RestaurantCard from "@/components/RestaurantCard";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import MapView from "@/components/MapView";
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
 
